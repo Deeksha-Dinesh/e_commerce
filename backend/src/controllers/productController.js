@@ -1,12 +1,17 @@
 const asyncHandler = require('../middleware/asyncHandler');
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getProducts = asyncHandler(async (req, res) => {
   const { category, search } = req.query;
   const query = {};
 
-  if (category) query.category = category;
-  if (search) query.name = { $regex: search, $options: 'i' };
+  if (typeof category === 'string' && category.trim()) query.category = category.trim();
+  if (typeof search === 'string' && search.trim()) {
+    query.name = { $regex: escapeRegex(search.trim()).slice(0, 80), $options: 'i' };
+  }
 
   const products = await Product.find(query).sort({ createdAt: -1 });
   const categories = await Product.distinct('category');
@@ -14,6 +19,11 @@ const getProducts = asyncHandler(async (req, res) => {
 });
 
 const getProductById = asyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400);
+    throw new Error('Invalid product id');
+  }
+
   const product = await Product.findById(req.params.id);
 
   if (!product) {
@@ -30,7 +40,12 @@ const createProduct = asyncHandler(async (req, res) => {
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
-  const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400);
+    throw new Error('Invalid product id');
+  }
+
+  const updatedProduct = await Product.findOneAndUpdate({ _id: req.params.id }, req.body, {
     new: true,
     runValidators: true,
   });
@@ -44,6 +59,11 @@ const updateProduct = asyncHandler(async (req, res) => {
 });
 
 const deleteProduct = asyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400);
+    throw new Error('Invalid product id');
+  }
+
   const product = await Product.findById(req.params.id);
 
   if (!product) {

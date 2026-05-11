@@ -2,6 +2,11 @@ const asyncHandler = require('../middleware/asyncHandler');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
+const normalizeEmail = (email) => {
+  const safeEmail = String(email || '').trim().toLowerCase();
+  return safeEmail;
+};
+
 const sanitizeUser = (user) => ({
   _id: user._id,
   name: user.name,
@@ -17,7 +22,12 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error('Name, email, and password are required');
   }
 
-  const existingUser = await User.findOne({ email });
+  const safeEmail = normalizeEmail(email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+    res.status(400);
+    throw new Error('Invalid email format');
+  }
+  const existingUser = await User.findOne({ email: safeEmail });
   if (existingUser) {
     res.status(400);
     throw new Error('User already exists');
@@ -26,8 +36,8 @@ const registerUser = asyncHandler(async (req, res) => {
   const isFirstUser = (await User.countDocuments()) === 0;
 
   const user = await User.create({
-    name,
-    email,
+    name: String(name).trim(),
+    email: safeEmail,
     password,
     role: isFirstUser ? 'admin' : 'user',
   });
@@ -40,8 +50,13 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  const safeEmail = normalizeEmail(email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+    res.status(400);
+    throw new Error('Invalid email format');
+  }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: safeEmail });
 
   if (!user || !(await user.matchPassword(password))) {
     res.status(401);

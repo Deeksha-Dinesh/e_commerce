@@ -9,6 +9,7 @@ const connectDB = async () => {
   }
 
   try {
+    mongoose.set('sanitizeFilter', true);
     await mongoose.connect(mongoUri);
     console.log('MongoDB connected');
   } catch (error) {

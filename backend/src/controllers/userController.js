@@ -1,4 +1,5 @@
 const asyncHandler = require('../middleware/asyncHandler');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const getUsers = asyncHandler(async (req, res) => {
@@ -7,6 +8,16 @@ const getUsers = asyncHandler(async (req, res) => {
 });
 
 const updateUserRole = asyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400);
+    throw new Error('Invalid user id');
+  }
+
+  if (req.body.role && !['user', 'admin'].includes(req.body.role)) {
+    res.status(400);
+    throw new Error('Invalid user role');
+  }
+
   const user = await User.findById(req.params.id);
 
   if (!user) {

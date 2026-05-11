@@ -1,4 +1,5 @@
 const asyncHandler = require('../middleware/asyncHandler');
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 
 const createOrder = asyncHandler(async (req, res) => {
@@ -39,6 +40,17 @@ const getAllOrders = asyncHandler(async (req, res) => {
 });
 
 const updateOrderStatus = asyncHandler(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400);
+    throw new Error('Invalid order id');
+  }
+
+  const allowedStatuses = new Set(['pending', 'processing', 'shipped', 'delivered', 'cancelled']);
+  if (req.body.status && !allowedStatuses.has(req.body.status)) {
+    res.status(400);
+    throw new Error('Invalid order status');
+  }
+
   const order = await Order.findById(req.params.id);
 
   if (!order) {
