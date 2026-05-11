@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const MAX_SEARCH_LENGTH = 80;
 const sanitizeProductInput = (payload = {}) => {
   const fields = {};
 
@@ -24,7 +25,7 @@ const getProducts = asyncHandler(async (req, res) => {
 
   if (typeof category === 'string' && category.trim()) query.category = category.trim();
   if (typeof search === 'string' && search.trim()) {
-    query.name = { $regex: escapeRegex(search.trim()).slice(0, 80), $options: 'i' };
+    query.name = { $regex: escapeRegex(search.trim()).slice(0, MAX_SEARCH_LENGTH), $options: 'i' };
   }
 
   const products = await Product.find(query).sort({ createdAt: -1 });
