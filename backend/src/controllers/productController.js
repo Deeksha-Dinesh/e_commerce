@@ -3,6 +3,20 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const sanitizeProductInput = (payload = {}) => {
+  const fields = {};
+
+  if (typeof payload.name === 'string') fields.name = payload.name.trim();
+  if (typeof payload.description === 'string') fields.description = payload.description.trim();
+  if (typeof payload.category === 'string') fields.category = payload.category.trim();
+  if (typeof payload.image === 'string') fields.image = payload.image.trim();
+  if (payload.price !== undefined) fields.price = Number(payload.price);
+  if (payload.stock !== undefined) fields.stock = Number(payload.stock);
+  if (payload.rating !== undefined) fields.rating = Number(payload.rating);
+  if (payload.featured !== undefined) fields.featured = Boolean(payload.featured);
+
+  return fields;
+};
 
 const getProducts = asyncHandler(async (req, res) => {
   const { category, search } = req.query;
@@ -35,7 +49,7 @@ const getProductById = asyncHandler(async (req, res) => {
 });
 
 const createProduct = asyncHandler(async (req, res) => {
-  const product = await Product.create(req.body);
+  const product = await Product.create(sanitizeProductInput(req.body));
   res.status(201).json(product);
 });
 
@@ -45,7 +59,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     throw new Error('Invalid product id');
   }
 
-  const updatedProduct = await Product.findOneAndUpdate({ _id: req.params.id }, req.body, {
+  const updatedProduct = await Product.findOneAndUpdate({ _id: req.params.id }, sanitizeProductInput(req.body), {
     new: true,
     runValidators: true,
   });

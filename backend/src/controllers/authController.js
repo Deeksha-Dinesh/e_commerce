@@ -7,6 +7,14 @@ const normalizeEmail = (email) => {
   return safeEmail;
 };
 
+const isValidEmail = (email) => {
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  if (!local || !domain || domain.startsWith('.') || domain.endsWith('.')) return false;
+  return domain.includes('.');
+};
+
 const sanitizeUser = (user) => ({
   _id: user._id,
   name: user.name,
@@ -23,7 +31,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const safeEmail = normalizeEmail(email);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+  if (!isValidEmail(safeEmail)) {
     res.status(400);
     throw new Error('Invalid email format');
   }
@@ -51,7 +59,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const safeEmail = normalizeEmail(email);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+  if (!isValidEmail(safeEmail)) {
     res.status(400);
     throw new Error('Invalid email format');
   }
